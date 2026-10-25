@@ -1,11 +1,11 @@
 #pragma once
 
+#include <charconv>
 #include <cstdint>
 #include <expected>
-#include <iostream>
-#include <print>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -29,31 +29,55 @@ concept FormatFCompatible = is_one_of<T, float, double>;
 template <typename T>
 concept FormatSCompatible = is_one_of<T, std::string, std::string_view>;
 
+template <typename T>
+    requires FormatUCompatible<T> || FormatDCompatible<T> || FormatFCompatible<T>
+std::expected<T, scan_error> parse_value(std::string_view input) {
+    T value{};
+
+    auto [res, err] = std::from_chars(input.begin(), input.end(), value);
+
+    if (err == std::errc() && res == input.end()) {
+        return value;
+    } else if (err == std::errc::result_out_of_range) {
+        return std::unexpected(scan_error("Result of parsing. Value is out of range. "));
+    } else if (err == std::errc::invalid_argument) {
+        return std::unexpected(scan_error("Result of parsing. Value has invalid argument. "));
+    }
+
+    return std::unexpected(scan_error("Result of parsing. Cannot parse value. "));
+}
+
+template <typename T>
+    requires FormatSCompatible<T>
+std::expected<T, scan_error> parse_value(std::string_view input) {
+    return T(input);
+}
+
 // Функция для парсинга значения с учетом спецификатора формата
 template <typename T>
 std::expected<T, scan_error> parse_value_with_format(std::string_view input, std::string_view fmt) {
     using RemCV = std::remove_cv_t<T>;
 
     if constexpr (FormatDCompatible<RemCV>) {
-        if (fmt == "" || fmt != "%d") {
+        if (fmt != "%d") {
             return std::unexpected(scan_error("Conversion specifier error."));
         }
-        std::println(std::cout, "Format D");
+        return parse_value<RemCV>(input);
     } else if constexpr (FormatSCompatible<RemCV>) {
-        if (fmt == "" || fmt != "%s") {
+        if (fmt != "%s") {
             return std::unexpected(scan_error("Conversion specifier error."));
         }
-        std::println(std::cout, "Format S");
+        return RemCV(input);
     } else if constexpr (FormatFCompatible<RemCV>) {
-        if (fmt == "" || fmt != "%f") {
+        if (fmt != "%f") {
             return std::unexpected(scan_error("Conversion specifier error."));
         }
-        std::println(std::cout, "Format F");
+        return parse_value<RemCV>(input);
     } else if constexpr (FormatUCompatible<RemCV>) {
-        if (fmt == "" || fmt != "%u") {
+        if (fmt != "%u") {
             return std::unexpected(scan_error("Conversion specifier error."));
         }
-        std::println(std::cout, "Format U");
+        return parse_value<RemCV>(input);
     } else {
         return std::unexpected(
             scan_error(std::format("Conversion specifier error. Format {} doesn't supported.", fmt)));
