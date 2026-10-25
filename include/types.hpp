@@ -15,10 +15,7 @@ struct scan_error {
 
 template <typename... Ts>
 struct scan_result {
-private:
     std::tuple<Ts...> m_Result;
-
-public:
     auto values() const { return m_Result; }
 };
 
