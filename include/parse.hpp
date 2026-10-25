@@ -1,8 +1,12 @@
 #pragma once
 
+#include <cstdint>
 #include <expected>
+#include <iostream>
+#include <print>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -10,12 +14,50 @@
 
 namespace stdx::details {
 
-// здесь ваш код
+template <typename T, typename... Args>
+inline constexpr bool is_one_of = (std::is_same_v<T, Args> || ...);
+
+template <typename T>
+concept FormatUCompatible = is_one_of<T, uint8_t, uint16_t, uint32_t, uint64_t>;
+
+template <typename T>
+concept FormatDCompatible = is_one_of<T, int8_t, int16_t, int32_t, int64_t>;
+
+template <typename T>
+concept FormatFCompatible = is_one_of<T, float, double>;
+
+template <typename T>
+concept FormatSCompatible = is_one_of<T, std::string, std::string_view>;
 
 // Функция для парсинга значения с учетом спецификатора формата
 template <typename T>
 std::expected<T, scan_error> parse_value_with_format(std::string_view input, std::string_view fmt) {
-    // здесь ваш код
+    using RemCV = std::remove_cv_t<T>;
+
+    if constexpr (FormatDCompatible<RemCV>) {
+        if (fmt == "" || fmt != "%d") {
+            return std::unexpected(scan_error("Conversion specifier error."));
+        }
+        std::println(std::cout, "Format D");
+    } else if constexpr (FormatSCompatible<RemCV>) {
+        if (fmt == "" || fmt != "%s") {
+            return std::unexpected(scan_error("Conversion specifier error."));
+        }
+        std::println(std::cout, "Format S");
+    } else if constexpr (FormatFCompatible<RemCV>) {
+        if (fmt == "" || fmt != "%f") {
+            return std::unexpected(scan_error("Conversion specifier error."));
+        }
+        std::println(std::cout, "Format F");
+    } else if constexpr (FormatUCompatible<RemCV>) {
+        if (fmt == "" || fmt != "%u") {
+            return std::unexpected(scan_error("Conversion specifier error."));
+        }
+        std::println(std::cout, "Format U");
+    } else {
+        return std::unexpected(
+            scan_error(std::format("Conversion specifier error. Format {} doesn't supported.", fmt)));
+    }
 }
 
 // Функция для проверки корректности входных данных и выделения из обеих строк интересующих данных для парсинга
@@ -70,4 +112,4 @@ parse_sources(std::string_view input, std::string_view format) {
     return std::pair{format_parts, input_parts};
 }
 
-} // namespace stdx::details
+}  // namespace stdx::details
