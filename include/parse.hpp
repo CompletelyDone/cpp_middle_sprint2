@@ -3,6 +3,7 @@
 #include <charconv>
 #include <cstdint>
 #include <expected>
+#include <format>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -59,22 +60,22 @@ std::expected<T, scan_error> parse_value_with_format(std::string_view input, std
     using RemCV = std::remove_cv_t<T>;
 
     if constexpr (FormatDCompatible<RemCV>) {
-        if (fmt != "%d") {
+        if (!fmt.empty() && fmt != "%d") {
             return std::unexpected(scan_error("Conversion specifier error."));
         }
         return parse_value<RemCV>(input);
     } else if constexpr (FormatSCompatible<RemCV>) {
-        if (fmt != "%s") {
+        if (!fmt.empty() && fmt != "%s") {
             return std::unexpected(scan_error("Conversion specifier error."));
         }
         return RemCV(input);
     } else if constexpr (FormatFCompatible<RemCV>) {
-        if (fmt != "%f") {
+        if (!fmt.empty() && fmt != "%f") {
             return std::unexpected(scan_error("Conversion specifier error."));
         }
         return parse_value<RemCV>(input);
     } else if constexpr (FormatUCompatible<RemCV>) {
-        if (fmt != "%u") {
+        if (!fmt.empty() && fmt != "%u") {
             return std::unexpected(scan_error("Conversion specifier error."));
         }
         return parse_value<RemCV>(input);
