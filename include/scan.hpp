@@ -10,40 +10,35 @@
 
 namespace stdx {
 
+template <typename Result, typename First, typename... Next, typename... Values>
+auto process_recurse(std::size_t index,
+                     const std::pair<std::vector<std::string_view>, std::vector<std::string_view>> &pair,
+                     Values... values) -> std::expected<Result, details::scan_error> {
+    auto result = details::parse_value_with_format<First>(pair.second[index], pair.first[index]);
+    if (!result) {
+        return std::unexpected(result.error());
+    }
+
+    if constexpr (sizeof...(Next) > 0) {
+        return process_recurse<Result, Next...>(index + 1, pair, values..., result.value());
+    } else {
+        return Result{std::tuple<Values..., First>{values..., result.value()}};
+    }
+}
+
 template <typename... Ts>
 std::expected<details::scan_result<Ts...>, details::scan_error> scan(std::string_view input, std::string_view format) {
     auto parsed = details::parse_sources(input, format);
     if (!parsed.has_value())
         return std::unexpected(parsed.error());
 
-    auto &[fmts, inputs] = parsed.value();
-    if (fmts.size() != inputs.size() || fmts.size() != sizeof...(Ts)) {
+    auto vec_pair = parsed.value();
+    if (vec_pair.first.size() != vec_pair.second.size() || vec_pair.first.size() != sizeof...(Ts)) {
         return std::unexpected(details::scan_error("Size mismatched. "));
     }
 
-    // Очень плохо, что в курсе(во второй теме) нету std::index_sequence. Пришлось гору времени потратить, чтобы найти
-    // как это сделать. Без index_sequence я представления не имею как это реализовывать. tuple_element_t принимает
-    // только const, соответственно, в рантайме невозможно получить индекс. Как только я не пробовал.
-    return [&]<std::size_t... Index>(
-               std::index_sequence<Index...>) -> std::expected<details::scan_result<Ts...>, details::scan_error> {
-        auto results = std::tuple{details::parse_value_with_format<std::tuple_element_t<Index, std::tuple<Ts...>>>(
-            inputs[Index], fmts[Index])...};
-
-        bool results_good = std::apply([](auto &&...res) { return (res.has_value() && ...); }, results);
-        if (!results_good) {
-            std::optional<details::scan_error> first_error;
-            std::apply(
-                [&first_error](auto &&...res) {
-                    ((!res.has_value() && !first_error ? (first_error = res.error(), true) : false), ...);
-                },
-                results);
-            return std::unexpected(*first_error);
-        }
-
-        auto values = std::apply([](auto &&...es) { return std::tuple<Ts...>{*es...}; }, results);
-
-        return details::scan_result<Ts...>{values};
-    }(std::index_sequence_for<Ts...>{});
+    using Result = details::scan_result<Ts...>;
+    return process_recurse<Result, Ts...>(0, vec_pair);
 }
 
 }  // namespace stdx
