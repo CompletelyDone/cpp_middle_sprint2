@@ -21,6 +21,9 @@ std::expected<details::scan_result<Ts...>, details::scan_error> scan(std::string
         return std::unexpected(details::scan_error("Size mismatched. "));
     }
 
+    // Очень плохо, что в курсе(во второй теме) нету std::index_sequence. Пришлось гору времени потратить, чтобы найти
+    // как это сделать. Без index_sequence я представления не имею как это реализовывать. tuple_element_t принимает
+    // только const, соответственно, в рантайме невозможно получить индекс. Как только я не пробовал.
     return [&]<std::size_t... Index>(
                std::index_sequence<Index...>) -> std::expected<details::scan_result<Ts...>, details::scan_error> {
         auto results = std::tuple{details::parse_value_with_format<std::tuple_element_t<Index, std::tuple<Ts...>>>(
