@@ -123,3 +123,10 @@ TEST(ScanTest, VolatileSignedInteger) {
 
     static_assert(std::is_volatile_v<ValueType>);
 }
+
+TEST(ScanTest, ErrorInTheMiddle) {
+    auto result = stdx::scan<int32_t, double, std::string>("654321 invalid Hello", "{%d} {%f} {%s}");
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_FALSE(result.error().message.empty());
+}
