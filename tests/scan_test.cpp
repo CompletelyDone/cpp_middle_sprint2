@@ -12,7 +12,7 @@ TEST(ScanTest, WrongSpecIntUint) {
 TEST(ScanTest, Success) {
     auto result = stdx::scan<uint8_t, uint8_t, uint16_t, uint8_t, uint8_t, std::string, std::string>(
         "24.10.2026 08:35 [AuthService] error", "{%u}.{%u}.{%u} {%u}:{%u} [{%s}] {%s}");
-    
+
     ASSERT_TRUE(result.has_value()) << result.error().message;
 
     auto values = result->values();
@@ -26,8 +26,7 @@ TEST(ScanTest, Success) {
     EXPECT_EQ(std::get<6>(values), "error");
 }
 
-TEST(ScanTest, SignedInteger)
-{
+TEST(ScanTest, SignedInteger) {
     auto result = stdx::scan<int32_t>("100", "{%d}");
 
     ASSERT_TRUE(result.has_value());
@@ -35,8 +34,7 @@ TEST(ScanTest, SignedInteger)
     EXPECT_EQ(std::get<0>(result->values()), 100);
 }
 
-TEST(ScanTest, NegativeSignedInteger)
-{
+TEST(ScanTest, NegativeSignedInteger) {
     auto result = stdx::scan<int32_t>("-100", "{%d}");
 
     ASSERT_TRUE(result.has_value());
@@ -44,8 +42,7 @@ TEST(ScanTest, NegativeSignedInteger)
     EXPECT_EQ(std::get<0>(result->values()), -100);
 }
 
-TEST(ScanTest, UnsignedInteger)
-{
+TEST(ScanTest, UnsignedInteger) {
     auto result = stdx::scan<uint32_t>("100", "{%u}");
 
     ASSERT_TRUE(result.has_value());
@@ -53,26 +50,23 @@ TEST(ScanTest, UnsignedInteger)
     EXPECT_EQ(std::get<0>(result->values()), 100);
 }
 
-TEST(ScanTest, Float)
-{
+TEST(ScanTest, Float) {
     auto result = stdx::scan<float>("10.1", "{%f}");
 
     ASSERT_TRUE(result.has_value());
 
-    EXPECT_EQ(std::get<0>(result->values()), 10.1f);
+    EXPECT_FLOAT_EQ(std::get<0>(result->values()), 10.1f);
 }
 
-TEST(ScanTest, Double)
-{
+TEST(ScanTest, Double) {
     auto result = stdx::scan<double>("10.1", "{%f}");
 
     ASSERT_TRUE(result.has_value());
 
-    EXPECT_EQ(std::get<0>(result->values()), 10.1d);
+    EXPECT_DOUBLE_EQ(std::get<0>(result->values()), 10.1);
 }
 
-TEST(ScanTest, String)
-{
+TEST(ScanTest, String) {
     auto result = stdx::scan<std::string>("Hello, Sniper", "Hello, {%s}");
 
     ASSERT_TRUE(result.has_value());
@@ -80,8 +74,7 @@ TEST(ScanTest, String)
     EXPECT_EQ(std::get<0>(result->values()), "Sniper");
 }
 
-TEST(ScanTest, StringView)
-{
+TEST(ScanTest, StringView) {
     auto result = stdx::scan<std::string_view>("Hello, Yandex", "Hello, {%s}");
 
     ASSERT_TRUE(result.has_value());
@@ -89,20 +82,44 @@ TEST(ScanTest, StringView)
     EXPECT_EQ(std::get<0>(result->values()), "Yandex");
 }
 
-TEST(ScanTest, UInt8_tOverflow)
-{
-    auto result = stdx::scan<uint8_t>("Hello, Sniper530", "Hello, Sniper{%u}");
+TEST(ScanTest, UInt8_tOverflow) {
+    auto result = stdx::scan<uint8_t>("256", "{%u}");
 
     ASSERT_FALSE(result.has_value());
 
     EXPECT_FALSE(result.error().message.empty());
 }
 
-TEST(ScanTest, EmptyPlaceholder)
-{
+TEST(ScanTest, EmptyPlaceholder) {
     auto result = stdx::scan<uint32_t>("100", "{}");
 
     ASSERT_TRUE(result.has_value());
 
     EXPECT_EQ(std::get<0>(result->values()), 100);
+}
+
+TEST(ScanTest, ConstSignedInteger) {
+    auto result = stdx::scan<const int32_t>("100", "{%d}");
+
+    ASSERT_TRUE(result.has_value());
+
+    EXPECT_EQ(std::get<0>(result->values()), 100);
+
+    using TupleType = std::remove_cvref_t<decltype(result->values())>;
+    using ValueType = std::tuple_element_t<0, TupleType>;
+
+    static_assert(std::is_const_v<ValueType>);
+}
+
+TEST(ScanTest, VolatileSignedInteger) {
+    auto result = stdx::scan<volatile int32_t>("100", "{%d}");
+
+    ASSERT_TRUE(result.has_value());
+
+    EXPECT_EQ(std::get<0>(result->values()), 100);
+
+    using TupleType = std::remove_cvref_t<decltype(result->values())>;
+    using ValueType = std::tuple_element_t<0, TupleType>;
+
+    static_assert(std::is_volatile_v<ValueType>);
 }
