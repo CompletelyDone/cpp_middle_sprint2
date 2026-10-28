@@ -15,13 +15,13 @@ template <std::size_t Index, typename Result, typename First, typename... Next, 
                                    Values... values) -> std::expected<Result, details::scan_error> {
     auto result = details::parse_value_with_format<First>(pair.second[Index], pair.first[Index]);
     if (!result) {
-        return std::unexpected(result.error());
+        return std::unexpected(std::move(result.error()));
     }
 
     if constexpr (sizeof...(Next) > 0) {
-        return process_recurse<Index + 1, Result, Next...>(pair, values..., result.value());
+        return process_recurse<Index + 1, Result, Next...>(pair, std::move(values)..., std::move(result.value()));
     } else {
-        return Result{std::tuple<Values..., First>{values..., result.value()}};
+        return Result{std::tuple<Values..., First>{std::move(values)..., std::move(result.value())}};
     }
 }
 
@@ -33,9 +33,9 @@ template <typename... Ts>
     } else {
         auto parsed = details::parse_sources(input, format);
         if (!parsed.has_value())
-            return std::unexpected(parsed.error());
+            return std::unexpected(std::move(parsed.error()));
 
-        auto vec_pair = parsed.value();
+        const auto &vec_pair = parsed.value();
         if (vec_pair.first.size() != vec_pair.second.size() || vec_pair.first.size() != sizeof...(Ts)) {
             return std::unexpected(details::scan_error("Size mismatched. "));
         }
