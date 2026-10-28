@@ -32,7 +32,7 @@ concept FormatSCompatible = is_one_of<T, std::string, std::string_view>;
 
 template <typename T>
     requires FormatUCompatible<T> || FormatDCompatible<T> || FormatFCompatible<T>
-std::expected<T, scan_error> parse_value(std::string_view input) {
+[[nodiscard]] std::expected<T, scan_error> parse_value(std::string_view input) {
     T value{};
 
     auto [res, err] = std::from_chars(input.begin(), input.end(), value);
@@ -50,13 +50,13 @@ std::expected<T, scan_error> parse_value(std::string_view input) {
 
 template <typename T>
     requires FormatSCompatible<T>
-std::expected<T, scan_error> parse_value(std::string_view input) {
+[[nodiscard]] std::expected<T, scan_error> parse_value(std::string_view input) {
     return T(input);
 }
 
 // Функция для парсинга значения с учетом спецификатора формата
 template <typename T>
-std::expected<T, scan_error> parse_value_with_format(std::string_view input, std::string_view fmt) {
+[[nodiscard]] std::expected<T, scan_error> parse_value_with_format(std::string_view input, std::string_view fmt) {
     using RemCV = std::remove_cv_t<T>;
 
     if constexpr (FormatDCompatible<RemCV>) {
@@ -87,7 +87,7 @@ std::expected<T, scan_error> parse_value_with_format(std::string_view input, std
 
 // Функция для проверки корректности входных данных и выделения из обеих строк интересующих данных для парсинга
 template <typename... Ts>
-std::expected<std::pair<std::vector<std::string_view>, std::vector<std::string_view>>, scan_error>
+[[nodiscard]] std::expected<std::pair<std::vector<std::string_view>, std::vector<std::string_view>>, scan_error>
 parse_sources(std::string_view input, std::string_view format) {
     std::vector<std::string_view> format_parts;  // Части формата между {}
     std::vector<std::string_view> input_parts;

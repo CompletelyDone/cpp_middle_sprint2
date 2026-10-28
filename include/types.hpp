@@ -16,7 +16,7 @@ struct scan_error {
 template <typename... Ts>
 struct scan_result {
     std::tuple<Ts...> m_Result;
-    const auto& values() const { return m_Result; }
+    [[nodiscard]] const auto &values() const { return m_Result; }
 };
 
 }  // namespace stdx::details

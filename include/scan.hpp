@@ -11,8 +11,8 @@
 namespace stdx {
 
 template <std::size_t Index, typename Result, typename First, typename... Next, typename... Values>
-auto process_recurse(const std::pair<std::vector<std::string_view>, std::vector<std::string_view>> &pair,
-                     Values... values) -> std::expected<Result, details::scan_error> {
+[[nodiscard]] auto process_recurse(const std::pair<std::vector<std::string_view>, std::vector<std::string_view>> &pair,
+                                   Values... values) -> std::expected<Result, details::scan_error> {
     auto result = details::parse_value_with_format<First>(pair.second[Index], pair.first[Index]);
     if (!result) {
         return std::unexpected(result.error());
@@ -26,7 +26,8 @@ auto process_recurse(const std::pair<std::vector<std::string_view>, std::vector<
 }
 
 template <typename... Ts>
-std::expected<details::scan_result<Ts...>, details::scan_error> scan(std::string_view input, std::string_view format) {
+[[nodiscard]] std::expected<details::scan_result<Ts...>, details::scan_error> scan(std::string_view input,
+                                                                                   std::string_view format) {
     if constexpr ((std::is_reference_v<Ts> || ...)) {
         return std::unexpected(details::scan_error("Reference types are not supported. "));
     } else {
