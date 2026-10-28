@@ -68,7 +68,7 @@ template <typename T>
         if (!fmt.empty() && fmt != "%s") {
             return std::unexpected(scan_error("Conversion specifier error."));
         }
-        return RemCV(input);
+        return parse_value<RemCV>(input);
     } else if constexpr (FormatFCompatible<RemCV>) {
         if (!fmt.empty() && fmt != "%f") {
             return std::unexpected(scan_error("Conversion specifier error."));
