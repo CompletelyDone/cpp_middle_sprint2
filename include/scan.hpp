@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <expected>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 namespace stdx {
@@ -26,17 +27,21 @@ auto process_recurse(const std::pair<std::vector<std::string_view>, std::vector<
 
 template <typename... Ts>
 std::expected<details::scan_result<Ts...>, details::scan_error> scan(std::string_view input, std::string_view format) {
-    auto parsed = details::parse_sources(input, format);
-    if (!parsed.has_value())
-        return std::unexpected(parsed.error());
+    if constexpr ((std::is_reference_v<Ts> || ...)) {
+        return std::unexpected(details::scan_error("Reference types are not supported. "));
+    } else {
+        auto parsed = details::parse_sources(input, format);
+        if (!parsed.has_value())
+            return std::unexpected(parsed.error());
 
-    auto vec_pair = parsed.value();
-    if (vec_pair.first.size() != vec_pair.second.size() || vec_pair.first.size() != sizeof...(Ts)) {
-        return std::unexpected(details::scan_error("Size mismatched. "));
+        auto vec_pair = parsed.value();
+        if (vec_pair.first.size() != vec_pair.second.size() || vec_pair.first.size() != sizeof...(Ts)) {
+            return std::unexpected(details::scan_error("Size mismatched. "));
+        }
+
+        using Result = details::scan_result<Ts...>;
+        return process_recurse<0, Result, Ts...>(vec_pair);
     }
-
-    using Result = details::scan_result<Ts...>;
-    return process_recurse<0, Result, Ts...>(vec_pair);
 }
 
 }  // namespace stdx

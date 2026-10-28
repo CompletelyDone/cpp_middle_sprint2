@@ -130,3 +130,10 @@ TEST(ScanTest, ErrorInTheMiddle) {
     ASSERT_FALSE(result.has_value());
     EXPECT_FALSE(result.error().message.empty());
 }
+
+TEST(ScanTest, RefSignedInteger) {
+    auto result = stdx::scan<int &>("100", "{%d}");
+
+    ASSERT_FALSE(result.has_value());
+    EXPECT_FALSE(result.error().message.empty());
+}
